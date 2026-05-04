@@ -20,8 +20,8 @@
   .nav-logo { font-family: 'DM Serif Display', serif; font-size: 1.6rem; letter-spacing: 0.15em; color: var(--gold); text-transform: uppercase; }
   .nav-cta { background: transparent; border: 1px solid var(--border-hover); color: var(--gold); font-family: 'DM Sans', sans-serif; font-size: 0.8rem; letter-spacing: 0.12em; text-transform: uppercase; padding: 0.5rem 1.25rem; border-radius: 2px; cursor: pointer; transition: all 0.3s; }
   .nav-cta:hover { background: var(--gold); color: var(--bg); }
-  .hero { min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 8rem 2rem 4rem; position: relative; overflow: hidden; }
-  .hero-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center 20%; z-index: 0; }
+  .hero { height: 75vh; min-height: 520px; max-height: 700px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 6rem 2rem 4rem; position: relative; overflow: hidden; }
+  .hero-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center 30%; z-index: 0; }
   .hero-overlay { position: absolute; inset: 0; z-index: 1; background: linear-gradient(to bottom, rgba(10,8,6,0.72) 0%, rgba(10,8,6,0.62) 40%, rgba(10,8,6,0.88) 100%); }
   .hero > *:not(.hero-img):not(.hero-overlay) { position: relative; z-index: 2; }
   .hero-eyebrow { font-size: 0.7rem; letter-spacing: 0.3em; text-transform: uppercase; color: var(--gold); margin-bottom: 1.5rem; opacity: 0; animation: fadeUp 0.8s 0.2s ease forwards; }
@@ -160,21 +160,62 @@
   <p class="success-msg" id="bottom-success">✦ Ya estás en la lista. Nos vemos pronto.</p>
 </section>
 <footer>© 2025 Zher · Social Tonic · Monterrey, MX</footer>
+<!-- Mailchimp hidden honeypot -->
+<div aria-hidden="true" style="position:absolute;left:-5000px;">
+  <input type="text" id="mc-honeypot" name="b_a317c02fcba877d69f49ec698_673d6b4cd3" tabindex="-1" value="">
+</div>
+
 <script>
+  const MAILCHIMP_URL = 'https://nyteon.us11.list-manage.com/subscribe/post?u=a317c02fcba877d69f49ec698&id=673d6b4cd3&f_id=005adee1f0';
+
   function joinWaitlist(source) {
     const emailId = source === 'hero' ? 'hero-email' : 'bottom-email';
     const successId = source === 'hero' ? 'hero-success' : 'bottom-success';
     const formId = source === 'hero' ? 'hero-form' : 'bottom-form';
     const emailEl = document.getElementById(emailId);
     const email = emailEl.value.trim();
+
     if (!email || !email.includes('@')) {
       emailEl.style.borderColor = 'rgba(200,80,80,0.5)';
       setTimeout(() => emailEl.style.borderColor = '', 1500);
       return;
     }
-    document.getElementById(formId).style.display = 'none';
-    document.getElementById(successId).style.display = 'block';
+
+    // Submit to Mailchimp via hidden form
+    const form = document.createElement('form');
+    form.action = MAILCHIMP_URL.replace('/post?', '/post-json?') + '&c=handleMailchimpResponse';
+    form.method = 'GET';
+    form.style.display = 'none';
+
+    const emailInput = document.createElement('input');
+    emailInput.name = 'EMAIL';
+    emailInput.value = email;
+    form.appendChild(emailInput);
+
+    const honey = document.createElement('input');
+    honey.name = 'b_a317c02fcba877d69f49ec698_673d6b4cd3';
+    honey.value = '';
+    form.appendChild(honey);
+
+    const script = document.createElement('script');
+    const callbackName = 'handleMailchimpResponse';
+    window[callbackName] = function(data) {
+      document.getElementById(formId).style.display = 'none';
+      document.getElementById(successId).style.display = 'block';
+      document.body.removeChild(script);
+    };
+
+    const url = MAILCHIMP_URL.replace('/post?', '/post-json?') + '&EMAIL=' + encodeURIComponent(email) + '&b_a317c02fcba877d69f49ec698_673d6b4cd3=&c=' + callbackName;
+    script.src = url;
+    document.body.appendChild(script);
+
+    // Show success optimistically after short delay
+    setTimeout(() => {
+      document.getElementById(formId).style.display = 'none';
+      document.getElementById(successId).style.display = 'block';
+    }, 1000);
   }
+
   document.querySelectorAll('.waitlist-input').forEach(input => {
     input.addEventListener('keydown', function(e) {
       if (e.key === 'Enter') joinWaitlist(this.id === 'hero-email' ? 'hero' : 'bottom');
